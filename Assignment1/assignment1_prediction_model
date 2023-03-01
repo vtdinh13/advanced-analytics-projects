@@ -1,0 +1,23 @@
+import csv
+import pandas as pd
+import re
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+
+# !beware of any path issues!
+train = pd.read_csv('Assignment 1/data/assignment1_train.csv')
+
+lat = np.array(train['property_lat'])
+lon = np.array(train['property_lon'])
+lat_std = (lat-lat.mean())/lat.std()
+lon_std = (lon-lon.mean())/lon.std()
+target_ln = np.log(np.array(train['target']))
+target = np.array(train['target'])
+latlonheatmap = pd.DataFrame({'lat': lat_std, 'lon': lon_std, 'price': target_ln})
+
+#plt.hist(target_ln, bins=100)
+#plt.boxplot(target_ln)
+#plt.plot(lat_std, lon_std, 'o')
+latlonheatmap.plot(kind="scatter", x="lat", y="lon", alpha=0.4, c="price", colorbar=True, sharex=False, cmap=plt.get_cmap("jet"))
+plt.show()
