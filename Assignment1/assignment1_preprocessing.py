@@ -36,3 +36,5 @@ train_df['property_last_updated'] = train_df['property_last_updated'].apply(lamb
 #train_df2['property_scraped_at'] = pd.to_datetime(train_df2['property_scraped_at'])
 train_df['property_last_updated_dt'] = train_df['property_scraped_at'] + train_df['property_last_updated']
 
+### just import the module to access train df
+### from assignment1_preprocessing import train_df
