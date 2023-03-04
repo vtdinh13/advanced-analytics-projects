@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
+
 date_columns = ['property_scraped_at', 'host_since', 'reviews_first', 'reviews_last']
 train_df = pd.read_csv("Assignment1/train.csv", parse_dates=date_columns)
 test_df = pd.read_csv("Assignment1/test.csv", parse_dates=date_columns)
@@ -12,7 +14,6 @@ def string_to_int(input_var):
         return_number = int(input_var.split(" ",1)[0])    
     return return_number
 
-from datetime import datetime, timedelta
 last_updated_text = train_df.property_last_updated.unique()
 #last_updated_text = np.array_str(last_updated_text)
 my_list = []
