@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 date_columns = ['property_scraped_at', 'host_since', 'reviews_first', 'reviews_last']
-train_df = pd.read_csv("train.csv", parse_dates=date_columns)
-test_df = pd.read_csv("test.csv", parse_dates=date_columns)
+train_df = pd.read_csv("Assignment1/train.csv", parse_dates=date_columns)
+test_df = pd.read_csv("Assignment1/test.csv", parse_dates=date_columns)
 
 def string_to_int(input_var):
     return_number = 0
@@ -35,6 +35,9 @@ for mytext in last_updated_text:
 train_df['property_last_updated'] = train_df['property_last_updated'].apply(lambda x: dict(my_list)[x])
 #train_df2['property_scraped_at'] = pd.to_datetime(train_df2['property_scraped_at'])
 train_df['property_last_updated_dt'] = train_df['property_scraped_at'] + train_df['property_last_updated']
+
+train_df['daypassed_since_lastreview'] = train_df['property_scraped_at'] - train_df['reviews_last']
+train_df['daypassed_since_firstreview'] = train_df['property_scraped_at'] - train_df['reviews_first']
 
 ### just import the module to access train df
 ### from assignment1_preprocessing import train_df
