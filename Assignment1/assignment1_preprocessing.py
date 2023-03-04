@@ -3,8 +3,8 @@ import numpy as np
 from datetime import datetime, timedelta
 
 date_columns = ['property_scraped_at', 'host_since', 'reviews_first', 'reviews_last']
-train_df = pd.read_csv("Assignment1/train.csv", parse_dates=date_columns)
-test_df = pd.read_csv("Assignment1/test.csv", parse_dates=date_columns)
+train_df = pd.read_csv("train.csv", parse_dates=date_columns)
+test_df = pd.read_csv("test.csv", parse_dates=date_columns)
 
 def string_to_int(input_var):
     return_number = 0
