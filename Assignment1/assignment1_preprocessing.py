@@ -2,13 +2,8 @@ import pandas as pd
 import numpy as np
 import sklearn.decomposition
 import datetime
-import os
 from datetime import timedelta
 from sklearn.neighbors import KNeighborsClassifier
-
-# Change directory
-current_dir = os.getcwd()
-subdir = os.path.join(current_dir, "Assignment1")
 
 date_columns = ['property_scraped_at', 'host_since', 'reviews_first', 'reviews_last']
 train_df = pd.read_csv("train.csv", parse_dates=date_columns)
