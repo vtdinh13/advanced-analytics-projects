@@ -1,6 +1,14 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+import sklearn.decomposition
+import datetime
+import os
+from datetime import timedelta
+from sklearn.neighbors import KNeighborsClassifier
+
+# Change directory
+current_dir = os.getcwd()
+subdir = os.path.join(current_dir, "Assignment1")
 
 date_columns = ['property_scraped_at', 'host_since', 'reviews_first', 'reviews_last']
 train_df = pd.read_csv("train.csv", parse_dates=date_columns)
@@ -52,7 +60,7 @@ def medianImputer(dataset, columns):
 
 # PCA transformation of property features as seen in the array below
 pcas = train_df[['property_max_guests', 'property_bathrooms', 'property_bathrooms', 'property_bedrooms']]
-train_df.drop(['property_max_guests', 'property_bathrooms', 'property_bathrooms', 'property_bedrooms'], axis=1, inplace=True)
+train_df.drop(['property_max_guests', 'property_bathrooms', 'property_bathrooms', 'property_bedrooms'], axis=1, inplace=False)
 medianImputer(pcas, ['property_max_guests', 'property_bathrooms', 'property_bathrooms', 'property_bedrooms'])
 pcas = (pcas - pcas.mean())/np.std(pcas)
 pca_model = sklearn.decomposition.PCA()
@@ -132,6 +140,3 @@ def hotOneEncode(dataset, columns):
 dums = hotOneEncode(train_df, ['property_feature_type', 'property_room_type', 'property_bed_type', 'property_scraped_at', 'host_response_time', 'booking_cancel_policy'])
 train_df.drop(['property_feature_type', 'property_room_type', 'property_bed_type', 'property_scraped_at', 'host_response_time', 'booking_cancel_policy'], axis=1, inplace=True)
 train_df = pd.concat([train_df, dums], axis=1)
-
-### just import the module to access train df
-### from assignment1_preprocessing import train_df
