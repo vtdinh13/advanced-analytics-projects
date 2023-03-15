@@ -119,3 +119,32 @@ def count_freq(df, col):
 def mean_target(df, col, target):
     df[col + '_mean_target'] = df.groupby(col)[target].transform('mean')
     return df
+
+
+# Mapping 'property_type' to 'property_feature_type'
+property_type_bins = {'apartment': 'Apartment',
+                      'house': 'House',
+                      'villa': 'House',
+                      'loft': 'Loft and B&B',
+                      'bed&breakfast': 'Loft_and_B&B',
+                      'townhouse': 'Town_Guest_Condo_Other',
+                      'guesthouse': 'Town_Guest_Condo_Other',
+                      'condominium': 'Town_Guest_Condo_Other',
+                      'other': 'Town_Guest_Condo_Other',
+                      'boat': 'Other',
+                      'boutiquehotel': 'Other',
+                      'cabin': 'Other',
+                      'camper/rv': 'Other',
+                      'castle': 'Other',
+                      'chalet': 'Other',
+                      'dorm': 'Other',
+                      'earthhouse': 'Other',
+                      'guestsuite': 'Other',
+                      'hostel': 'Other',
+                      'servicedapartment': 'Other',
+                      'tent': 'Other',
+                      'timeshare': 'Other',
+                      'yurt': 'Other'}
+
+# One hot encode categorical variables
+# def one_hot_encode(df, cat_col):

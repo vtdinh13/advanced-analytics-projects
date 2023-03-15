@@ -25,12 +25,15 @@ train_df = pp.days_passed(train_df, 'reviews_first', 'days_since_first_review')
 # Create location variable indicating if location is in BRU or ANT (BRU = 1, ANT = 0)?
 train_df = pp.BRU_or_ANT(train_df, 'property_zipcode')
 
-# Create 'property_feature_type' variable binning property type
-train_df['property_feature_type'] = train_df.apply(lambda x: pp.prop_type_bins(x['property_type']), axis=1)
+# Create 'property_feature_type' recoding 'property_type' into 3 categories: 'house', 'apartment', 'other'
+train_df = train_df.assign(property_feature_type=train_df.property_type.map(pp.property_type_bins))
 
 # Create variable giving the frequency of each zipcode
 train_df = pp.count_freq(train_df, 'property_zipcode')
 
 # Create variable attributing mean target to each zipcode
 train_df = pp.mean_target(train_df, 'property_zipcode', 'target')
+
+# One hot encode 'property_feature_type'
+#train_df = pp.one_hot_encode(train_df, 'property_feature_type')
 
