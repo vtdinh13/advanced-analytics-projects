@@ -23,7 +23,7 @@ pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 1000)
 pd.set_option('display.width', 1000)
 
-data = pd.DataFrame(pd.read_csv('Assignment 1/data/assignment1_train.csv'))
+data = pd.DataFrame(pd.read_csv('train.csv'))
 target_variable = data['target']
 data.drop(['target'], axis=1, inplace=True)
 X = data
