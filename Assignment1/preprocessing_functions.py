@@ -88,3 +88,16 @@ class ZipcodeKNNImputer(BaseEstimator, TransformerMixin):
 def BRU_or_ANT(df, zipcode):
     df['location'] = df[zipcode].apply(lambda x: 1 if str(x)[0] == '1' else 0)
     return df
+
+# Function for encoding "property_feature_type"
+def prop_type_bins(t):
+    if t in ['Apartment']:
+        return 'apartment'
+    if t in ['House']:
+        return 'house'
+    if t in ['Loft', 'Bed & Breakfast']:
+        return 'loft_and_bdnbrfst'
+    if t in ['Townhouse', 'Guesthouse', 'Condominium', 'Other']:
+        return 'town_guest_condo_other'
+    else:
+        return 'other'
