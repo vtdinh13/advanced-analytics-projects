@@ -20,7 +20,8 @@ def fetch_data(columns):
 
 # Split the data into a train and test set
 def split_train_test(X, y, test_size):
-    train_df, test_df, train_target, test_target = sklearn.model_selection.train_test_split(X, y, test_size=test_size)
+    train_df, test_df, train_target, test_target = sklearn.model_selection.train_test_split(X, y, test_size=test_size,
+                                                                                            random_state=42)
     return train_df, test_df, train_target, test_target
 
 
@@ -59,8 +60,14 @@ def text_to_date_columns(df, date_column, text_columns):
     return df
 
 
+# Calculate days passed since the inputted date (column in date format) and 'property_scraped_at' date
+def days_passed(df, date_column, new_column_name):
+    df[new_column_name] = df['property_scraped_at'] - df[date_column]
+    return df
+
+
+# INCORRECT
 # Impute 'property_zipcode' missing values using a KNN imputer fitted on 'lat' and 'lon' columns
-# Incorrect code, fix it?
 class ZipcodeKNNImputer(BaseEstimator, TransformerMixin):
     def __init__(self, n_neighbors=4):
         self.n_neighbors = n_neighbors
