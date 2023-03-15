@@ -51,7 +51,7 @@ train_data1['location'] = train_data1['property_lat'].apply(lambda x: 1 if x < 1
 
 # Encode "property_zipcode"
 zips_freq = train_data1.groupby('property_zipcode')['property_zipcode'].count()
-zips_with_target = pd.concat([train_data1, train_target], axis=1)
+zips_with_target = pd.concat([train_data1, train_target1], axis=1)
 zips_mean = zips_with_target.groupby('property_zipcode')['target'].mean()
 
 # Instead of zipcode, add two columns. One with frequency, one with target mean
@@ -139,7 +139,7 @@ test_data1['property_zipcode'] = test_zipcodes_imputed
 # Encode location variable
 test_data1['location'] = test_data1['property_lat'].apply(lambda x: 1 if x < 1 else 0)
 
-test_data1['property_zipcode_targetmean'] = test_data1.apply(lambda row: zips_mean[str(row['property_zipcode'])] if row['property_zipcode'] in zips_train else train_target.mean(), axis=1)
+test_data1['property_zipcode_targetmean'] = test_data1.apply(lambda row: zips_mean[str(row['property_zipcode'])] if row['property_zipcode'] in zips_train else train_target1.mean(), axis=1)
 test_data1['property_zipcode_freq'] = test_data1.apply(lambda row: zips_freq[str(row['property_zipcode'])] if row['property_zipcode'] in zips_freq else 1, axis=1)
 
 # Encode "property_feature" for TEST data
@@ -188,23 +188,23 @@ test_data1.drop(test_data1.columns.difference(keep_columns), axis=1, inplace=Tru
 
 # XGBOOST
 xgb = xgboost.XGBRegressor(eta=0.05, max_depth=5, subsample=0.7)
-xgb.fit(train_data1, train_target)
+xgb.fit(train_data1, train_target1)
 xgb_preds_test = xgb.predict(test_data1)
 xgb_preds_train = xgb.predict(train_data1)
-print('mean test: ', rmse(train_target.mean(), test_target))
-print('xgb test: ', rmse(xgb_preds_test, test_target))
-print('mean train: ', rmse(train_target.mean(), train_target))
-print('xgb train: ', rmse(xgb_preds_train, train_target))
+print('mean test: ', rmse(train_target1.mean(), test_target1))
+print('xgb test: ', rmse(xgb_preds_test, test_target1))
+print('mean train: ', rmse(train_target1.mean(), train_target1))
+print('xgb train: ', rmse(xgb_preds_train, train_target1))
 
 # RANDOM FOREST
 knn_properties = sklearn.ensemble.RandomForestRegressor(n_estimators=1000, max_depth=7, max_features=0.8, bootstrap=True)
-knn_properties.fit(train_data1.values, train_target.values)
+knn_properties.fit(train_data1.values, train_target1.values)
 preds = knn_properties.predict(test_data1.values)
 preds_train = knn_properties.predict(train_data1.values)
-print('mean test: ',rmse(train_target.mean(), test_target))
-print('randomForest test: ',rmse(preds, test_target))
-print('mean train: ',rmse(train_target.mean(), train_target))
-print('randomForest train: ',rmse(preds_train, train_target))
+print('mean test: ',rmse(train_target1.mean(), test_target1))
+print('randomForest test: ',rmse(preds, test_target1))
+print('mean train: ',rmse(train_target1.mean(), train_target1))
+print('randomForest train: ',rmse(preds_train, train_target1))
 
 # Sample output for train- and test data for purpose of comparison / validation that everything worked as inteded
 print(train_data1.head())

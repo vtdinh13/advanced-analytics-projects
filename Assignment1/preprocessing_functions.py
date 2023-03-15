@@ -9,8 +9,16 @@ from sklearn.model_selection import train_test_split
 
 
 # Fetch the data from the csv files parse the inputted date columns
-def fetch_data(columns):
-    train_df = pd.read_csv('train.csv', parse_dates=columns)
+def fetch_data(date_col, cat_col):
+    train_df = pd.read_csv('train.csv', parse_dates=date_col)
+
+    # For all categorical columns, delete any spaces in the column values and make string values lowercase
+    for col in cat_col:
+        # WARNING: also deletes spaces between words of sentences
+        train_df[col] = train_df[col].str.replace(' ', '')
+    #    train_df[col] = train_df[col].str.lower()
+
+    #train_df[cat_col] = train_df[cat_col].astype('category')
 
     y = train_df['target']
     X = train_df.drop(['target'], axis=1)
@@ -89,6 +97,7 @@ def BRU_or_ANT(df, zipcode):
     df['location'] = df[zipcode].apply(lambda x: 1 if str(x)[0] == '1' else 0)
     return df
 
+
 # Function for encoding "property_feature_type"
 def prop_type_bins(t):
     if t in ['Apartment']:
@@ -101,3 +110,9 @@ def prop_type_bins(t):
         return 'town_guest_condo_other'
     else:
         return 'other'
+
+
+# Function creating a variable counting the frequency of categorical variables
+def count_freq(df, col):
+    df[col + '_count'] = df.groupby(col)[col].transform('count')
+    return df
