@@ -133,6 +133,8 @@ def recode(df, col, mapping):
 def one_hot_encode(df, cat_col):
     categorical_encoder = OneHotEncoder(handle_unknown='ignore')
     encoded_column = categorical_encoder.fit_transform(df[[cat_col]]).toarray()
-    encoded_column = pd.DataFrame(encoded_column, columns=categorical_encoder.get_feature_names([cat_col]))
+    encoded_column = pd.DataFrame(encoded_column, columns=categorical_encoder.get_feature_names_out([cat_col]))
+    df.reset_index(drop=True, inplace=True)
+    encoded_column.reset_index(drop=True, inplace=True)
     df = pd.concat([df, encoded_column], axis=1)
     return df

@@ -60,7 +60,7 @@ train_df = pp.count_freq(train_df, 'property_zipcode')
 train_df = pp.mean_target(train_df, 'property_zipcode', 'target')
 
 # One hot encode 'property_feature_type'
-#train_df = pp.one_hot_encode(train_df, 'property_feature_type')
+train_df = pp.one_hot_encode(train_df, 'property_type_recoded')
 
 
 
