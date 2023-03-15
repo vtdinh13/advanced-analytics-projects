@@ -5,10 +5,10 @@ from sklearn.preprocessing import FunctionTransformer
 
 date_columns = ['property_scraped_at', 'host_since', 'reviews_first', 'reviews_last']
 categorical_columns = ['property_type', 'property_zipcode', 'property_room_type', 'property_bed_type', 'host_response_time', 'booking_cancel_policy']
-X, y = pp.fetch_data(date_columns, categorical_columns)
+X = pp.fetch_data(date_columns, categorical_columns)
 
 # Perform train test split
-train_df, test_df, train_target, test_target = pp.split_train_test(X, y, 0.2)
+train_df, test_df = pp.split_train_test(X, 0.2)
 
 # Transform 'property_last_updated' to a datetime object
 pp.text_to_date_columns(train_df, 'property_scraped_at', ['property_last_updated'])
@@ -31,4 +31,6 @@ train_df['property_feature_type'] = train_df.apply(lambda x: pp.prop_type_bins(x
 # Create variable giving the frequency of each zipcode
 train_df = pp.count_freq(train_df, 'property_zipcode')
 
+# Create variable attributing mean target to each zipcode
+train_df = pp.mean_target(train_df, 'property_zipcode', 'target')
 

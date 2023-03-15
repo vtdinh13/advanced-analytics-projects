@@ -16,21 +16,18 @@ def fetch_data(date_col, cat_col):
     for col in cat_col:
         # WARNING: also deletes spaces between words of sentences
         train_df[col] = train_df[col].str.replace(' ', '')
-    #    train_df[col] = train_df[col].str.lower()
+        train_df[col] = train_df[col].str.lower()
 
-    #train_df[cat_col] = train_df[cat_col].astype('category')
+    train_df[cat_col] = train_df[cat_col].astype('category')
 
-    y = train_df['target']
-    X = train_df.drop(['target'], axis=1)
-
-    return X, y
+    return train_df
 
 
 # Split the data into a train and test set
-def split_train_test(X, y, test_size):
-    train_df, test_df, train_target, test_target = sklearn.model_selection.train_test_split(X, y, test_size=test_size,
-                                                                                            random_state=42)
-    return train_df, test_df, train_target, test_target
+def split_train_test(X, test_size):
+    train_df, test_df = sklearn.model_selection.train_test_split(X, test_size=test_size, random_state=42)
+
+    return train_df, test_df
 
 
 # Function to transform the text in the 'property_last_updated' column to an integer
@@ -115,4 +112,10 @@ def prop_type_bins(t):
 # Function creating a variable counting the frequency of categorical variables
 def count_freq(df, col):
     df[col + '_count'] = df.groupby(col)[col].transform('count')
+    return df
+
+
+# Function creating a variable attributing the mean target value to each categorical variable
+def mean_target(df, col, target):
+    df[col + '_mean_target'] = df.groupby(col)[target].transform('mean')
     return df
