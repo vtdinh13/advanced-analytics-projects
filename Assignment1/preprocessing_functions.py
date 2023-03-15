@@ -52,6 +52,8 @@ def text_to_date_columns(df, date_column, text_columns):
                 datetime_date = timedelta(days=-xyz)
             elif mytext == "yesterday":
                 datetime_date = timedelta(days=-1)
+            elif mytext == "never":
+                datetime_date = None
             else:
                 datetime_date = timedelta()
             my_list.append([mytext, datetime_date])
