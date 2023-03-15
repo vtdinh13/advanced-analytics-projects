@@ -6,6 +6,7 @@ import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
 import sklearn.neighbors
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
 
 
 # Fetch the data from the csv files parse the inputted date columns
@@ -121,30 +122,17 @@ def mean_target(df, col, target):
     return df
 
 
-# Mapping 'property_type' to 'property_feature_type'
-property_type_bins = {'apartment': 'Apartment',
-                      'house': 'House',
-                      'villa': 'House',
-                      'loft': 'Loft and B&B',
-                      'bed&breakfast': 'Loft_and_B&B',
-                      'townhouse': 'Town_Guest_Condo_Other',
-                      'guesthouse': 'Town_Guest_Condo_Other',
-                      'condominium': 'Town_Guest_Condo_Other',
-                      'other': 'Town_Guest_Condo_Other',
-                      'boat': 'Other',
-                      'boutiquehotel': 'Other',
-                      'cabin': 'Other',
-                      'camper/rv': 'Other',
-                      'castle': 'Other',
-                      'chalet': 'Other',
-                      'dorm': 'Other',
-                      'earthhouse': 'Other',
-                      'guestsuite': 'Other',
-                      'hostel': 'Other',
-                      'servicedapartment': 'Other',
-                      'tent': 'Other',
-                      'timeshare': 'Other',
-                      'yurt': 'Other'}
+# Recoding categorical variables
+def recode(df, col, mapping):
+    df = df.assign(**{f'{col}_recoded': df[col].map(mapping)})
+    df[f'{col}_recoded'] = df[f'{col}_recoded'].astype('category')
+    return df
+
 
 # One hot encode categorical variables
-# def one_hot_encode(df, cat_col):
+def one_hot_encode(df, cat_col):
+    categorical_encoder = OneHotEncoder(handle_unknown='ignore')
+    encoded_column = categorical_encoder.fit_transform(df[[cat_col]]).toarray()
+    encoded_column = pd.DataFrame(encoded_column, columns=categorical_encoder.get_feature_names([cat_col]))
+    df = pd.concat([df, encoded_column], axis=1)
+    return df
