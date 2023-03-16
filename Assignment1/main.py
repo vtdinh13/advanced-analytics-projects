@@ -1,4 +1,6 @@
 import pandas as pd
+from sklearn.impute import SimpleImputer
+
 import Assignment1.preprocessing_functions as pp
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder
@@ -66,5 +68,10 @@ train_df = pp.one_hot_encode(train_df, 'property_type_recoded')
 train_df = pp.one_hot_encode_list_col(train_df, 'property_amenities', n=10)
 train_df = pp.one_hot_encode_list_col(train_df, 'extra', n=4)
 
+# Impute missing values in 'property_bedrooms', 'property_beds' and 'property_bathrooms' using the median
+SI = SimpleImputer(strategy='median')
+train_df['property_bedrooms'] = SI.fit_transform(train_df[['property_bedrooms']])
+train_df['property_bathrooms'] = SI.fit_transform(train_df[['property_bathrooms']])
+train_df['property_beds'] = SI.fit_transform(train_df[['property_beds']])
 
 
