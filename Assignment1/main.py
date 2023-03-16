@@ -62,5 +62,9 @@ train_df = pp.mean_target(train_df, 'property_zipcode', 'target')
 # One hot encode 'property_feature_type'
 train_df = pp.one_hot_encode(train_df, 'property_type_recoded')
 
+# Convert 'property_amenities' and 'extras' to one hot encoded columns of the top n most frequently occurring values
+train_df = pp.one_hot_encode_list_col(train_df, 'property_amenities', n=10)
+train_df = pp.one_hot_encode_list_col(train_df, 'extra', n=4)
+
 
 

@@ -6,7 +6,7 @@ import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
 import sklearn.neighbors
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer
 
 
 # Fetch the data from the csv files parse the inputted date columns
@@ -138,3 +138,22 @@ def one_hot_encode(df, cat_col):
     encoded_column.reset_index(drop=True, inplace=True)
     df = pd.concat([df, encoded_column], axis=1)
     return df
+
+
+# Convert columns with comma separated list to OneHotEncoded columns using the MultiLabelBinarizer and keep the top n
+# most frequently occurring values as columns
+def one_hot_encode_list_col(df, col, n='max'):
+    mlb = MultiLabelBinarizer()
+    df[col] = df[col].str.replace(' ', '')
+    df[col] = df[col].str.lower()
+    df[col] = df[col].fillna('unknown')
+    one_hot_encoded_col = pd.DataFrame(mlb.fit_transform(df[col].str.split(',')), columns=mlb.classes_, index=df.property_id).reset_index().drop(columns='property_id')
+
+    if n == 'max':
+        return df
+    else:
+        col_freq = pd.DataFrame(one_hot_encoded_col.sum(), columns=[f'{col}_freq'])
+        col_freq = col_freq.sort_values(by=f'{col}_freq', ascending=False)
+        top_n_amen = np.array(pd.DataFrame(col_freq.iloc[range(n), :]).index)
+        df = pd.concat([df, one_hot_encoded_col[top_n_amen]], axis=1)
+        return df

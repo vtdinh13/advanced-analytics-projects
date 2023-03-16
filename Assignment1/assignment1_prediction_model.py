@@ -101,7 +101,7 @@ amenities_freqs.columns = ['amenities_freqs']
 amen_freq_sorted = amenities_freqs.sort_values('amenities_freqs', ascending=False)
 # Indicate here how many of the top-n most frequently occurring amenities you want to keep
 amen_topN_list = np.array(pd.DataFrame(amen_freq_sorted.iloc[range(10),:]).index)
-train_data1 = pd.concat([train_data1, one_hot], axis=1)
+train_data1 = pd.concat([train_data1, one_hot[amen_topN_list]], axis=1)
 
 # Encode "extra"
 property_extra = train_data1['extra']
