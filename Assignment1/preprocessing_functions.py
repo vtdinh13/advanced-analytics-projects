@@ -75,44 +75,30 @@ def days_passed(df, date_column, new_column_name):
     return df
 
 
-# Function to impute missing values in 'property_zipcode' using latitude and longitude values
-def get_zipcode(lat, lon):
-    geolocator = Nominatim(user_agent="my_application")
-    location = geolocator.reverse(f'{lat}, {lon}')
-    address = location.raw['address']
-    zipcode = address.get('postcode')
-    return zipcode
-
-
-def impute_zipcode(df, lat_col, lon_col, zipcode_col):
-    df = df.copy()
-    missing_zip_idx = df[df[zipcode_col].isnull()].index
-    for idx in missing_zip_idx:
-        lat = df.at[idx, lat_col]
-        lon = df.at[idx, lon_col]
-        zipcode = get_zipcode(lat, lon)
-        df.at[idx, zipcode_col] = zipcode
-
-    return df
-
-
 # Custom transformer to impute missing values in 'property_zipcode' using latitude and longitude values
 class ZipcodeImputer(BaseEstimator, TransformerMixin):
-    def __init__(self, lat, lon, zipcode_col):
-        self.lat = lat
-        self.lon = lon
+    def __init__(self, lat_col, lon_col, zipcode_col):
+        self.lat_col = lat_col
+        self.lon_col = lon_col
         self.zipcode_col = zipcode_col
 
     def fit(self, X, y=None):
         return self
 
     def transform(self, X, y=None):
+        def get_zipcode(lat, lon):
+            geolocator = Nominatim(user_agent="my_application")
+            location = geolocator.reverse(f'{lat}, {lon}')
+            address = location.raw['address']
+            zipcode = address.get('postcode')
+            return zipcode
+
         X = X.copy()
         missing_zip_idx = X[X[self.zipcode_col].isnull()].index
         for idx in missing_zip_idx:
-            lat = X.at[idx, self.lat]
-            lon = X.at[idx, self.lon]
-            zipcode = impute_zipcode(lat, lon)
+            lat = X.at[idx, self.lat_col]
+            lon = X.at[idx, self.lon_col]
+            zipcode = get_zipcode(lat, lon)
             X.at[idx, self.zipcode_col] = zipcode
 
         return X
