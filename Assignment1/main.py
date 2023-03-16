@@ -1,12 +1,11 @@
 import pandas as pd
 from sklearn.impute import SimpleImputer
-
 import Assignment1.preprocessing_functions as pp
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder
 
 date_columns = ['property_scraped_at', 'host_since', 'reviews_first', 'reviews_last']
-categorical_columns = ['property_type', 'property_zipcode', 'property_room_type', 'property_bed_type', 'host_response_time', 'booking_cancel_policy']
+categorical_columns = ['property_type', 'property_room_type', 'property_bed_type', 'host_response_time', 'booking_cancel_policy']
 X = pp.fetch_data(date_columns, categorical_columns)
 
 # Perform train test split
@@ -19,10 +18,9 @@ pp.text_to_date_columns(train_df, 'property_scraped_at', ['property_last_updated
 train_df = pp.days_passed(train_df, 'reviews_last', 'days_since_last_review')
 train_df = pp.days_passed(train_df, 'reviews_first', 'days_since_first_review')
 
-# INCORRECT
-# Impute missing values in 'property_zipcode' using a KNN imputer fitted on 'lat' and 'lon' columns
-#zipcode_imputer = pp.ZipcodeKNNImputer()
-#zipcode_imputer.fit_transform(train_df)
+# Impute missing values in 'property_zipcode' using latitude and longitude values
+train_df = pp.impute_zipcode(train_df, 'property_lat', 'property_lon', 'property_zipcode')
+train_df['property_zipcode'] = train_df['property_zipcode'].astype('category')
 
 # Create location variable indicating if location is in BRU or ANT (BRU = 1, ANT = 0)?
 train_df = pp.BRU_or_ANT(train_df, 'property_zipcode')
@@ -73,5 +71,3 @@ SI = SimpleImputer(strategy='median')
 train_df['property_bedrooms'] = SI.fit_transform(train_df[['property_bedrooms']])
 train_df['property_bathrooms'] = SI.fit_transform(train_df[['property_bathrooms']])
 train_df['property_beds'] = SI.fit_transform(train_df[['property_beds']])
-
-

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from geopy.geocoders import Nominatim
 import pandas as pd
 import os
 import numpy as np
@@ -74,23 +75,51 @@ def days_passed(df, date_column, new_column_name):
     return df
 
 
-# INCORRECT
-# Impute 'property_zipcode' missing values using a KNN imputer fitted on 'lat' and 'lon' columns
-class ZipcodeKNNImputer(BaseEstimator, TransformerMixin):
-    def __init__(self, n_neighbors=4):
-        self.n_neighbors = n_neighbors
+# Function to impute missing values in 'property_zipcode' using latitude and longitude values
+def get_zipcode(lat, lon):
+    geolocator = Nominatim(user_agent="my_application")
+    location = geolocator.reverse(f'{lat}, {lon}')
+    address = location.raw['address']
+    zipcode = address.get('postcode')
+    return zipcode
+
+
+def impute_zipcode(df, lat_col, lon_col, zipcode_col):
+    df = df.copy()
+    missing_zip_idx = df[df[zipcode_col].isnull()].index
+    for idx in missing_zip_idx:
+        lat = df.at[idx, lat_col]
+        lon = df.at[idx, lon_col]
+        zipcode = get_zipcode(lat, lon)
+        df.at[idx, zipcode_col] = zipcode
+
+    return df
+
+
+# Custom transformer to impute missing values in 'property_zipcode' using latitude and longitude values
+class ZipcodeImputer(BaseEstimator, TransformerMixin):
+    def __init__(self, lat, lon, zipcode_col):
+        self.lat = lat
+        self.lon = lon
+        self.zipcode_col = zipcode_col
 
     def fit(self, X, y=None):
-        self.imputer = sklearn.neighbors.KNeighborsRegressor(n_neighbors=self.n_neighbors)
-        self.imputer.fit(X[['property_lat', 'property_lon']], X['property_zipcode'])
         return self
 
     def transform(self, X, y=None):
-        X['property_zipcode'] = self.imputer.predict(X[['property_lat', 'property_lon']])
+        X = X.copy()
+        missing_zip_idx = X[X[self.zipcode_col].isnull()].index
+        for idx in missing_zip_idx:
+            lat = X.at[idx, self.lat]
+            lon = X.at[idx, self.lon]
+            zipcode = impute_zipcode(lat, lon)
+            X.at[idx, self.zipcode_col] = zipcode
+
         return X
 
 
-# Create location variable indicating if location is in BRU or ANT using the 'property_zipcode' column, if 'property_zipcode' starts with 1, then the location is in BRU, otherwise it is in ANT
+# Create location variable indicating if location is in BRU or ANT using the 'property_zipcode' column, if
+# 'property_zipcode' starts with 1, then the location is in BRU, otherwise it is in ANT
 def BRU_or_ANT(df, zipcode):
     df['location'] = df[zipcode].apply(lambda x: 1 if str(x)[0] == '1' else 0)
     return df
@@ -147,7 +176,8 @@ def one_hot_encode_list_col(df, col, n='max'):
     df[col] = df[col].str.replace(' ', '')
     df[col] = df[col].str.lower()
     df[col] = df[col].fillna('unknown')
-    one_hot_encoded_col = pd.DataFrame(mlb.fit_transform(df[col].str.split(',')), columns=mlb.classes_, index=df.property_id).reset_index().drop(columns='property_id')
+    one_hot_encoded_col = pd.DataFrame(mlb.fit_transform(df[col].str.split(',')), columns=mlb.classes_,
+                                       index=df.property_id).reset_index().drop(columns='property_id')
 
     if n == 'max':
         return df
