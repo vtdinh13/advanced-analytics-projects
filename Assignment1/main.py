@@ -26,6 +26,12 @@ train_df = ZI.fit_transform(train_df)
 # Create location variable indicating if location is in BRU or ANT (BRU = 1, ANT = 0)?
 train_df = pp.BRU_or_ANT(train_df, 'property_zipcode')
 
+# Create variable giving the frequency of each zipcode
+train_df = pp.count_freq(train_df, 'property_zipcode')
+
+# Create variable attributing mean target to each zipcode
+train_df = pp.mean_target(train_df, 'property_zipcode', 'target')
+
 # Recode 'property_type' into 5 categories: 'house', 'apartment', 'other'
 # Mapping 'property_type' to 'property_feature_type'
 property_type_bins = {'apartment': 'Apartment',
@@ -53,12 +59,6 @@ property_type_bins = {'apartment': 'Apartment',
                       'yurt': 'Other'}
 
 train_df = pp.recode(train_df, 'property_type', property_type_bins)
-
-# Create variable giving the frequency of each zipcode
-train_df = pp.count_freq(train_df, 'property_zipcode')
-
-# Create variable attributing mean target to each zipcode
-train_df = pp.mean_target(train_df, 'property_zipcode', 'target')
 
 # One hot encode 'property_feature_type'
 train_df = pp.one_hot_encode(train_df, 'property_type_recoded')
