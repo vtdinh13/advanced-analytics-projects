@@ -1,4 +1,6 @@
 from datetime import timedelta
+
+from geopy.exc import GeocoderTimedOut
 from geopy.geocoders import Nominatim
 import pandas as pd
 import os
@@ -43,37 +45,43 @@ def string_to_int(input_var):
 
 
 # Transform the last_updated_text to a datetime object
-def text_to_date_columns(df, date_column, text_columns):
-    for text_column in text_columns:
-        last_updated_text = df[text_column].unique()
-        my_list = []
-        for mytext in last_updated_text:
-            if "week" in mytext:
-                xyz = string_to_int(mytext)
-                datetime_date = timedelta(weeks=-xyz)
-            elif "month" in mytext:
-                xyz = string_to_int(mytext) * 4 + 2
-                datetime_date = timedelta(weeks=-xyz)
-            elif "days" in mytext:
-                xyz = string_to_int(mytext)
-                datetime_date = timedelta(days=-xyz)
-            elif mytext == "yesterday":
-                datetime_date = timedelta(days=-1)
-            elif mytext == "never":
-                datetime_date = None
-            else:
-                datetime_date = timedelta()
-            my_list.append([mytext, datetime_date])
-        df[text_column] = df[text_column].apply(lambda x: dict(my_list)[x])
-        df[text_column + '_dt'] = df[date_column] + df[text_column]
+def text_to_date_columns(df, date_column, text_column):
+    last_updated_text = df[text_column].unique()
+    my_list = []
+    for mytext in last_updated_text:
+        if "week" in mytext:
+            xyz = string_to_int(mytext)
+            datetime_date = timedelta(weeks=-xyz)
+        elif "month" in mytext:
+            xyz = string_to_int(mytext) * 4 + 2
+            datetime_date = timedelta(weeks=-xyz)
+        elif "days" in mytext:
+            xyz = string_to_int(mytext)
+            datetime_date = timedelta(days=-xyz)
+        elif mytext == "yesterday":
+            datetime_date = timedelta(days=-1)
+        elif mytext == "never":
+            datetime_date = None
+        else:
+            datetime_date = timedelta()
+        my_list.append([mytext, datetime_date])
+    df[text_column] = df[text_column].apply(lambda x: dict(my_list)[x])
+    df[text_column + '_dt'] = df[date_column] + df[text_column]
     return df
 
 
 # Calculate days passed since the inputted date (column in date format) and 'property_scraped_at' date
-def days_passed(df, date_column, new_column_name):
-    df[new_column_name] = df['property_scraped_at'] - df[date_column]
+def days_passed(df, date_column):
+    df['days_since_' + date_column] = df['property_scraped_at'] - df[date_column]
     return df
 
+
+def get_zipcode_test(lat, lon):
+    geolocator = Nominatim(user_agent="my_application")
+    location = geolocator.reverse(f'{lat}, {lon}')
+    address = location.raw['address']
+    zipcode = address.get('postcode')
+    return address
 
 # Custom transformer to impute missing values in 'property_zipcode' using latitude and longitude values
 class ZipcodeImputer(BaseEstimator, TransformerMixin):
@@ -107,7 +115,7 @@ class ZipcodeImputer(BaseEstimator, TransformerMixin):
 # Create location variable indicating if location is in BRU or ANT using the 'property_zipcode' column, if
 # 'property_zipcode' starts with 1, then the location is in BRU, otherwise it is in ANT
 def BRU_or_ANT(df, zipcode):
-    df['location'] = df[zipcode].apply(lambda x: 1 if str(x)[0] == '1' else 0)
+    df['BRU_or_ANT'] = df[zipcode].apply(lambda x: 1 if str(x)[0] == '1' else 0)
     return df
 
 
@@ -173,3 +181,9 @@ def one_hot_encode_list_col(df, col, n='max'):
         top_n_amen = np.array(pd.DataFrame(col_freq.iloc[range(n), :]).index)
         df = pd.concat([df, one_hot_encoded_col[top_n_amen]], axis=1)
         return df
+
+
+# Since some functions use the index, we need to reset the index
+def reset_index(df):
+    df = df.reset_index(inplace=False)
+    return df
