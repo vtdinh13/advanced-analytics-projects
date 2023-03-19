@@ -12,19 +12,29 @@ X = pp.fetch_data(date_columns, categorical_columns)
 # Perform train test split
 train_df, test_df = pp.split_train_test(X, 0.2)
 
+## Preprocessing training set
 # Transform 'property_last_updated' to a datetime object
 pp.text_to_date_columns(train_df, 'property_scraped_at', ['property_last_updated'])
+
+pp.text_to_date_columns(test_df, 'property_scraped_at', ['property_last_updated'])
 
 # Calculate days passed since 'reviews_last' and 'reviews_first'
 train_df = pp.days_passed(train_df, 'reviews_last', 'days_since_last_review')
 train_df = pp.days_passed(train_df, 'reviews_first', 'days_since_first_review')
 
+train_df = pp.days_passed(test_df, 'reviews_last', 'days_since_last_review')
+train_df = pp.days_passed(test_df, 'reviews_first', 'days_since_first_review')
+
 # Impute missing values in 'property_zipcode' using latitude and longitude values
 ZI = pp.ZipcodeImputer('property_lat', 'property_lon', 'property_zipcode')
 train_df = ZI.fit_transform(train_df)
 
+test_df = ZI.fit_transform(test_df)
+
 # Create location variable indicating if location is in BRU or ANT (BRU = 1, ANT = 0)?
 train_df = pp.BRU_or_ANT(train_df, 'property_zipcode')
+
+test_df = pp.BRU_or_ANT(test_df, 'property_zipcode')
 
 # Create variable giving the frequency of each zipcode
 train_df = pp.count_freq(train_df, 'property_zipcode')
