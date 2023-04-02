@@ -17,6 +17,9 @@ import datetime
 from sklearn.preprocessing import MultiLabelBinarizer
 import category_encoders as ce
 from sklearn.feature_extraction import FeatureHasher
+from transformers import pipeline #sentiment analysis 
+import warnings
+warnings.filterwarnings("ignore")
 
 
 pd.set_option('display.max_rows', 1000)
@@ -27,7 +30,7 @@ data = pd.DataFrame(pd.read_csv('Assignment 1/data/assignment1_train.csv'))
 target_variable = data['target']
 data.drop(['target'], axis=1, inplace=True)
 X = data
-train_data, test_data, train_target, test_target = sklearn.model_selection.train_test_split(X, target_variable, test_size=0.2)
+train_data, test_data, train_target, test_target = sklearn.model_selection.train_test_split(X, target_variable, test_size=0.2, random_state = 555)
 
 # Preprocessing Pipeline for TRAIN data
 # Impute "property_zipcode"
@@ -118,13 +121,57 @@ extra_topN_list = np.array(pd.DataFrame(extra_freq_sorted.iloc[range(4),:]).inde
 train_data = pd.concat([train_data, one_hot], axis=1)
 
 # Impute values for features with nans or missing values
-median_bathroom = train_data['property_bathrooms'].median()
-train_data['property_bathrooms_missing'] = train_data['property_bathrooms'].apply(lambda x: 0 if not pd.isna(x) else 1)
-train_data['property_bathrooms'] = train_data['property_bathrooms'].apply(lambda x: median_bathroom if pd.isna(x) else x)
+#median_bathroom = train_data['property_bathrooms'].median()
+#train_data['property_bathrooms_missing'] = train_data['property_bathrooms'].apply(lambda x: 0 if not pd.isna(x) else 1)
+#train_data['property_bathrooms'] = train_data['property_bathrooms'].apply(lambda x: median_bathroom if pd.isna(x) else x)
 
-median_bedroom = train_data['property_bedrooms'].median()
-train_data['property_bedrooms_missing'] = train_data['property_bedrooms'].apply(lambda x: 0 if not pd.isna(x) else 1)
-train_data['property_bedrooms'] = train_data['property_bedrooms'].apply(lambda x: median_bedroom if pd.isna(x) else x)
+#median_bedroom = train_data['property_bedrooms'].median()
+#train_data['property_bedrooms_missing'] = train_data['property_bedrooms'].apply(lambda x: 0 if not pd.isna(x) else 1)
+#train_data['property_bedrooms'] = train_data['property_bedrooms'].apply(lambda x: median_bedroom if pd.isna(x) else x)
+
+def impute_median(df):
+
+    #define numeric value types 
+    numerics = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']
+
+    #impute median for each missing value that contains numeric values 
+    df = df.fillna(df.select_dtypes(include = numerics).median())
+
+    return df
+
+train_data = impute_median(train_data)
+
+
+# Perform word count for textual columns
+columns_nlp = ['property_summary', 'property_space', 'property_desc', 'property_neighborhood', 'property_notes', 'property_transit', 'property_access', 'property_interaction', 'property_rules']
+
+def add_word_count(df, col):
+    if df[col].dtype == 'object':
+        df[f'{col}_word_count'] = df[col].apply(lambda text: len(text.split()) if isinstance(text, str) else 0)
+    else:
+        pass
+
+for col in columns_nlp:
+    add_word_count(train_data, col)
+
+# sentiment analysis
+model_name = "nlptown/bert-base-multilingual-uncased-sentiment"
+classifier = pipeline("sentiment-analysis", model = model_name) #create classifier pipleine 
+
+property_summary_sent = train_data['property_summary'].apply(str).apply(classifier) #apply the classifier 
+
+property_summary_ratings_train = [] #extract ratings
+for item in property_summary_sent:
+    label = item[0].get('label', '')
+    if 'star' in label:
+        rating = label.split()[0]
+        try:
+            rating = int(rating)
+            property_summary_ratings_train.append(rating)
+        except ValueError:
+            pass
+
+train_data['property_summary_ratings'] = property_summary_ratings_train #create ratings column 
 
 
 # Preprocessing Pipeline for TEST data
@@ -168,12 +215,34 @@ one_hot = pd.DataFrame(mlb.fit_transform(property_extra), columns=mlb.classes_)
 test_data = pd.concat([test_data, one_hot], axis=1)
 
 # Impute values for features with nans or missing values for TEST data
-test_data['property_bathrooms_missing'] = test_data['property_bathrooms'].apply(lambda x: 0 if not pd.isna(x) else 1)
-test_data['property_bathrooms'] = test_data['property_bathrooms'].apply(lambda x: median_bathroom if pd.isna(x) else x)
+#test_data['property_bathrooms_missing'] = test_data['property_bathrooms'].apply(lambda x: 0 if not pd.isna(x) else 1)
+#test_data['property_bathrooms'] = test_data['property_bathrooms'].apply(lambda x: median_bathroom if pd.isna(x) else x)
 
-test_data['property_bedrooms_missing'] = test_data['property_bedrooms'].apply(lambda x: 0 if not pd.isna(x) else 1)
-test_data['property_bedrooms'] = test_data['property_bedrooms'].apply(lambda x: median_bedroom if pd.isna(x) else x)
+#test_data['property_bedrooms_missing'] = test_data['property_bedrooms'].apply(lambda x: 0 if not pd.isna(x) else 1)
+#test_data['property_bedrooms'] = test_data['property_bedrooms'].apply(lambda x: median_bedroom if pd.isna(x) else x)
+test_data = impute_median(test_data)
 
+# Perform word count for textual columns
+for col in columns_nlp:
+    add_word_count(test_data, col)
+
+
+#Perform sentiment analysis for property summary column
+property_summary_sent_test = test_data['property_summary'].apply(str).apply(classifier)
+
+property_summary_ratings_test = []
+
+for item in property_summary_sent_test:
+    label = item[0].get('label', '')
+    if 'star' in label:
+        rating = label.split()[0]
+        try:
+            rating = int(rating)
+            property_summary_ratings_test.append(rating)
+        except ValueError:
+            pass
+        
+test_data['property_summary_ratings'] = property_summary_ratings_test
 
 # PREDICTION
 # train_data, test_data, train_target, test_target
@@ -182,7 +251,9 @@ def rmse(predictions, targets):
     return(rmse_val)
 
 # Keep only cleaned and usable columns, discard the rest
-keep_columns = np.concatenate((amen_topN_list,extra_topN_list, ['location','property_bathrooms','property_bathrooms_missing','property_bedrooms','property_bedrooms_missing', 'property_zipcode_freq', 'property_zipcode_targetmean', 'property_feature_type0', 'property_feature_type1', 'property_feature_type2', 'property_feature_type3', 'property_lat', 'property_lon']))
+keep_columns = np.concatenate((amen_topN_list,extra_topN_list, ['location','property_bathrooms','property_bathrooms_missing','property_bedrooms','property_bedrooms_missing', 'property_zipcode_freq', 'property_zipcode_targetmean', 'property_feature_type0', 'property_feature_type1', 
+                                                                'property_feature_type2', 'property_feature_type3', 'property_lat', 'property_lon', 'reviews_rating', 'host_nr_listings_total', 'reviews_per_month', 'property_max_guests', 'property_summary_word_count', 
+                                                                'property_interaction_word_count', 'property_description_word_count', 'property_neighborhood_word_count', 'property_summary_ratings']))
 train_data.drop(train_data.columns.difference(keep_columns), axis=1, inplace=True)
 test_data.drop(test_data.columns.difference(keep_columns), axis=1, inplace=True)
 
