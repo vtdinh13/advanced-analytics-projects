@@ -119,6 +119,26 @@ This behaviour makes sense, though, as the underlying model is trained on the Im
 It is also worth mentioning that, depending on the baseline-image used for the integrated gradient method, the highlighted features are least robust, i.e. most varied, for the class \textit{other} whereas for the other two classes, the visualized integrated gradient is very robust and does not change much when comparing black, white or random noise baseline images. This, once more, reflects the aforementioned point.
 \section{Model Application}
 The model manages to reliably classify images into the three classes. Figure 3 below displays a set of set of test-images which the model has neither seen in the training-set nor in the validation-set yet has successfully classified. Notice, however, image (i) and image (n) where the prediction is not fully confident. With image (n) the inherent ambivalence of the differentiation between \textit{interior} and \textit{other} might be reflected. Often, certain types of spaces such as gardens or the driveway leading up to a restaurant can not easily be told apart from a place's interior where people dine if, for example, the dining place is within the garden or outdoors. Some ambivalence is introduced as a result.
+\newline
+\newline
+Below table summarizes the model's performance on a test-set of 505 unseen images. The model achieves an accuracy of 97.6\%.
+
+\begin{center}
+\begin{tabular}{c|ccc|c}
+&&\textit{prediction}&&\\
+\textit{truth}&dish&interior&other&\textit{recall}\\
+\hline
+dish&351&0&0&100\%\\
+interior&1&101&3&96.19\%\\
+other&1&7&42&84\%\\
+\hline
+\textit{precision}&99.43\%&93.52\%&93.33\%&\textbf{97.63\%}\\
+
+ 
+ 
+\end{tabular}
+\end{center}
+
 
 \begin{figure}
 \centering
@@ -175,7 +195,7 @@ The model manages to reliably classify images into the three classes. Figure 3 b
 \begin{subfigure}{.3\textwidth}
 	\centering
 	\includegraphics[width=.8\linewidth]{other3}
-	\caption{\textit{other} 55.2\%; interior 46\%}
+	\caption{\textit{other} 55.2\%; \textit{interior} 46\%}
 	\label{A subfigure label}
 \end{subfigure}
 
