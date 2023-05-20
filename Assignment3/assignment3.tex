@@ -24,7 +24,7 @@
 	captionpos=b,
 	keywordstyle=\color{blue},
 	commentstyle=\color{green!60!black},
-	stringstyle=\color{blue},
+	stringstyle=\color{orange},
 	%backgroundcolor=\color{gray!10},
 	xleftmargin=-5em, % Set the left margin to 0
 }
@@ -99,7 +99,7 @@
 		# Load in the model if not yet loaded:
 		if not globals()['models_loaded']:
 		# load in your models here
-		globals()['my_model'] = PipelineModel.load('/home/linas/Desktop/kul/$em 2/advanced analytics in business/assignment 3/model_tf_idf/')
+		globals()['my_model'] = PipelineModel.load('/home/linas/Desktop/kul/$em 2/advanced analytics in business/assignment 3/model/')
 		globals()['models_loaded'] = True
 		# Make predictions with loaded model
 		df_result = globals()['my_model'].transform(df)
@@ -116,15 +116,16 @@
 		\label{figure label}
 	\end{figure}
 	
-	We can see that the model stumbles on some instances and predicts the sentiment incorrectly. It is expected as it demonstrated imperfect accuracy on the test set as well. Model could be improved by constructing a larger data set, considering more sophisticated featurization and modeling approaches. However, achieving superior predictive performance was not the main goal of this assignment.	
+	We can see that model successfully outputs predictions on the incoming stream. In addition, it is able to predict the majority of the sentiments correctly. Hence, our entire pipeline is functioning as intended. \\
+	Needless to say, model stumbles on some instances. It is expected as it demonstrated imperfect accuracy on the test set as well. Model could be improved by constructing a larger data set, considering more sophisticated featurization and modeling approaches. However, achieving superior predictive performance was not the main goal of this assignment.	
 	
 	\section{Challenges}
 	
-	Throughout the work on this assignment, we encountered several challenges that we briefly detail below.
+	Throughout the work on this assignment, we encountered several challenges that are briefly detailed below.
 	\begin{itemize}
 		
 		\item Spark was generally very slow. It took 60 minutes to fit the pipeline on the training set and another 90 minutes to compute the accuracy of the model. Setting Spark to work with 4 cores (instead of 1 core as default) improved the situation. However, it was evident that Spark is not optimized to run on a single machine i.e. locally.
-		\item Stream for receiving reviews kept continuously crashing after 3-4mins, necessitating a restart of the cell. Multiple group members were receiving the batches to alleviate the effort.
+		\item Stream to receive reviews kept continuously crashing after 3-4mins while collecting raw data, necessitating a restart of the cell. Multiple group members were receiving the batches to alleviate the effort.
 		
 	\end{itemize}
 	
