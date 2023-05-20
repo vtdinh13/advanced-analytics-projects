@@ -125,7 +125,7 @@
 	\begin{itemize}
 		
 		\item Spark was generally very slow. It took 60 minutes to fit the pipeline on the training set and another 90 minutes to compute the accuracy of the model. Setting Spark to work with 4 cores (instead of 1 core as default) improved the situation. However, it was evident that Spark is not optimized to run on a single machine i.e. locally.
-		\item Stream to receive reviews kept continuously crashing after 3-4mins while collecting raw data, necessitating a restart of the cell. Multiple group members were receiving the batches to alleviate the effort.
+		\item Stream to receive reviews kept continuously crashing after 3-4mins while collecting raw data, necessitating a restart of the notebook cell. Multiple group members were receiving the batches to alleviate the effort.
 		
 	\end{itemize}
 	
