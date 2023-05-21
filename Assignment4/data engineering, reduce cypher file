@@ -1,0 +1,41 @@
+import json
+import networkx as nx, pandas as pd 
+
+filepath1 = '/Users/yavuzhanyavuz/Desktop/Leuven/Big Data/assignment4/datasets/'
+full_network = nx.read_graphml(filepath1 + 'twitch.graphml')
+
+nodes_listed = list(full_network.nodes.data())
+node_info = [[i[0], i[1].get('id'), i[1].get('node_type')] for i in nodes_listed]
+node_info = pd.DataFrame(node_info, columns =['numerical_id', 'id', 'type'])
+
+hop = [[i[1].get('id'), i[1].get("views_avg"), i[1].get('description'), i[1].get('nr_streams'), i[1].get('followers')] for i in nodes_listed if i[1].get('node_type') == 'streamer']
+dfx = pd.DataFrame(hop, columns = ['id', 'views_avg', 'description', 'nr_streams', 'followers'])
+
+filtered_users = dfx.query("views_avg >= 1100")
+
+filtered_users = node_info.merge(filtered_users, left_on='id', right_on ='id').query("type == 'streamer'")
+node_list = filtered_users.numerical_id.to_list()
+
+
+file1 = open(filepath1 + 'twitch.cypherl', 'r')
+Lines = file1.readlines()
+
+mylist = []
+for index,i in enumerate(Lines):
+    if i[:6] == 'CREATE':
+        if i[i.find('{__mg_id__: ') + 12:i.find(',')] in node_list:
+            mylist.append(i)
+    elif i[:9] == 'MATCH (u:':
+        number1 = i.split("= ")[1][:6]
+        number2 = i.split("= ")[2][:6]
+        if number1 in node_list and number2 in node_list:
+            mylist.append(i)
+    else:
+        mylist.append(i)
+    
+    if index % 10000 == 0:
+        print(index)
+
+myfile=open('reducedset.cypherl','w')
+myfile.writelines(mylist)
+
