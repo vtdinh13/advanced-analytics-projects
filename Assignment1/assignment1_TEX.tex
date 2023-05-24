@@ -112,7 +112,7 @@ RandomForest, XGBoost and Linear Regression are tested as potential model candid
 \indent As a baseline score for orientation we calculated the mean (67.9) of the entire dataset and used it as a single-value predictor. The corresponding RMSE value on the test-set is $46.718$ and the Mean Average Error (MAE) is $28.138$. Throughout the process of trying out various models and manipulating the data back and forth, both scores proved elusive and difficult to reach, indicating there is generally little predictive power in the dataset. \newline
 After fine-tuning \textit{XGBoost} on our validation-set, we settled on a maximum-tree-depth of 3, a subsampling-ratio of 0.8, a minimum-child-weight of 5 and a learning-rate/step-size shrinkage of 0.02.\newline
 \indent Below table summarizes various scores for the validation- and test-set. Our model corresponds to \textit{tuned XGBoost}.
-The test-metrics table indicates both the normal and the \textit{hidden} score, reflecting two separate test-sets of which only one was visible during model construction.
+The test-metrics table indicates both the normal and the \textit{hidden} score, reflecting two separate test-sets of which only one was visible during model construction. The hidden mean is inferred by comparing teams' previous score to their hidden score (thus not entirely certain).
 \newline
 \begin{center}
 \begin{tabular}{c | c c}
@@ -134,7 +134,7 @@ tuned XGBoost&47.045&27.523\\
 hidden mean*&58.89&31.344\\
 hidden tuned XGBoost&59.328&30.687
 \end{tabular}
-\captionof{table}{Tabulation of train- and test scores. *The \textit{hidden mean} is only inferred by comparing teams' previous score to their hidden score} 
+\captionof{table}{Tabulation of train- and test scores}
 \end{center}
 \section{Conclusion}
 From above table it becomes clear the best "model" in terms of predictive performance is the arithmetic mean, once again highlighting the likely possibility the data holds vanishingly little predictive power.
