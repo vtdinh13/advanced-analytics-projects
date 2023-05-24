@@ -1,0 +1,206 @@
+import networkx as nx
+import os 
+import json 
+import pandas as pd, numpy as np
+
+## import full dataset
+filepath1 = '/Users/yavuzhanyavuz/Desktop/Leuven/Big Data/assignment4/datasets/'
+full_network = nx.read_graphml(filepath1 + 'twitch.graphml')
+print('number of edges:', full_network.number_of_edges())
+print('number of nodes:', full_network.number_of_nodes())
+
+
+## Importing generated community data in memgraph 
+with open(filepath1 + '/reduced_set_communities.json', 'r', encoding="utf-8") as myfile:
+    Lines = myfile.readlines()
+    Lines = [i[:-1] for i in Lines]
+
+Lines[-1] = Lines[-1] + '}'
+
+mylist =[]
+last_digit = 0
+for index,i in enumerate(Lines):
+    new_dict = dict(json.loads(i))
+    node_type = new_dict.get('node').get('labels')
+    numerical_id = new_dict.get('node').get('id')
+    id = new_dict.get('node').get('properties').get('id')
+    name = new_dict.get('node').get('properties').get('name')
+    community_id = new_dict.get('node').get('properties').get('community')
+    last_digit = index
+    mylist.append([community_id, id, name, node_type[0], numerical_id])
+
+df_communities = pd.DataFrame(mylist, columns = ['community_id', 'id', 'name', 'node_type', 'numerical_id'])
+print(df_communities.head())
+#########################
+
+## extract EDGES
+xx = list(full_network.edges.data())
+edge_info = [[i[0], i[1], i[2].get('edge_type'), i[2].get('label')] for i in xx]
+edge_info = pd.DataFrame(edge_info, columns =['from', 'to', 'type', 'edge_id'])
+print(edge_info.head())
+
+## extract NODES
+xx = list(full_network.edges.data())
+edge_info = [[i[0], i[1], i[2].get('edge_type'), i[2].get('label')] for i in xx]
+edge_info = pd.DataFrame(edge_info, columns =['from', 'to', 'type', 'edge_id'])
+nodes_listed = list(full_network.nodes.data())
+node_info = [[i[0], i[1].get('id'), i[1].get('node_type')] for i in nodes_listed]
+node_info = pd.DataFrame(node_info, columns =['numerical_id', 'id', 'type'])
+node_info2 = node_info.merge(df_communities[['id', 'community_id', 'node_type']], left_on=['id', 'type'], right_on=['id', 'node_type'], how='inner')
+print(node_info2.head())
+
+edge_info_full = edge_info.merge(node_info, left_on='from', right_on='numerical_id').merge(node_info, left_on='to', right_on='numerical_id')
+print(edge_info_full.head())
+
+### filtering users with views_avg > 1100
+hop = [[i[1].get('id'), i[1].get("views_avg"), i[1].get('description'), i[1].get('nr_streams'), i[1].get('followers')] for i in nodes_listed if i[1].get('node_type') == 'streamer']
+dfx = pd.DataFrame(hop, columns = ['id', 'views_avg', 'description', 'nr_streams', 'followers'])
+filtered_users = dfx.query("views_avg >= 1100")
+filtered_users = node_info.merge(filtered_users, left_on='id', right_on ='id').query("type == 'streamer'")
+remaining_edges = edge_info_full[edge_info_full['from'].isin(filtered_users.numerical_id)]
+nonstreamer_nodes = list(remaining_edges.query("type_x !='recommends'").loc[:,'to'].unique())
+node_list = filtered_users.numerical_id.to_list()
+for i in nonstreamer_nodes:
+    node_list.append(i)
+
+### keep selected nodes in a separate networkx graph
+network_data = full_network.copy()
+network_data.remove_nodes_from(node_info[~node_info.numerical_id.isin(node_info2.numerical_id.to_list())].numerical_id.to_list())
+print('Number of edges in FULL network',full_network.number_of_edges())
+print('Number of edges in REDUCED network', network_data.number_of_edges())
+print('Number of nodes in FULL network', full_network.number_of_nodes())
+print('Number of nodes in REDUCED network', network_data.number_of_nodes())
+
+centrality = nx.degree_centrality(network_data)
+ppr1 = nx.pagerank(network_data)
+
+outgoing_edges = edge_info_full[edge_info_full['from'].isin(filtered_users.numerical_id)]
+outgoing_edges.shape
+receivers = outgoing_edges[outgoing_edges['type_x'] == 'recommends'].loc[:,'to']
+print('total shape',receivers.shape)
+print("except streamers total nodes: ",outgoing_edges[outgoing_edges['type_x'] != 'recommends'].shape[0])
+print("selected streamers edge count, recommends:",receivers[receivers.isin(filtered_users.numerical_id)].shape[0])
+print("total edge count should be:", receivers[receivers.isin(filtered_users.numerical_id)].shape[0] + outgoing_edges[outgoing_edges['type_x'] != 'recommends'].shape[0])
+
+### Adding community information to the networkx graph
+for index, i in enumerate(network_data.nodes):
+    network_data.nodes[i]['community'] = int(node_info2.loc[node_info2['numerical_id'] == i, 'community_id'])
+
+### starting naive markov chain
+df_edges = edge_info_full.merge(node_info2[['numerical_id', 'community_id']], left_on='from', right_on='numerical_id').merge(node_info2[['numerical_id', 'community_id']], left_on='to', right_on='numerical_id').drop(columns = ['numerical_id_x', 'numerical_id_y'])
+df_edges.columns = ['from', 'to', 'type_x', 'edge_id', 'id_from', 'type_from', 'id_to', 'type_to',
+       'community_id_from', 'community_id_to']
+print(df_edges.head())
+
+df_step1 = df_edges.query("type_x =='recommends'").groupby(['community_id_from', 'community_id_to']).size().reset_index(name='ccount')
+df_step1['is_same_community'] = np.where(df_step1['community_id_from'] == df_step1['community_id_to'],1,0)
+hop = df_step1.pivot_table(index = 'community_id_from', columns = 'is_same_community', values = 'ccount', aggfunc='sum').reset_index().rename_axis(None, axis=1)
+hop.columns = ['community_id', 'outflow_edges', 'within_edges']
+hop['score'] = hop.apply(lambda x: x.within_edges / x.outflow_edges, axis=1)
+print(hop.sort_values("score", ascending=False).head(10))
+
+### generate Transition matrix
+transition_df = df_step1.pivot(index='community_id_from',  columns = 'community_id_to', values='ccount').fillna(0)
+transition_df = transition_df.apply(lambda x: x/transition_df.sum(axis=1)) ##convert to probabilities
+transition_matrix = transition_df.to_numpy()
+print(transition_matrix.shape)
+transition_matrix = transition_matrix[1:] 
+
+markov_list = [transition_matrix]
+for i in range(100):
+    markov_list.append(np.dot(markov_list[i], transition_matrix))
+
+
+### pagerank, select only recommends edges
+df_recommends = df_edges.query("type_x =='recommends'")
+node_info_streamers = node_info2.query("type == 'streamer'")
+streamer_network = network_data.copy()
+streamer_network.remove_nodes_from(node_info2.query("type != 'streamer'").numerical_id.to_list())
+streamers_info = [[i[0], i[1].get('id'), i[1].get('node_type'), i[1].get('followers'), i[1].get('views_avg')] for i in list(streamer_network.nodes.data())]
+streamers_info = pd.DataFrame(streamers_info, columns =['numerical_id', 'id', 'type', 'followers', 'views_avg'])
+pagerank_streamers = nx.pagerank(streamer_network, alpha = 0.85)
+#nx.google_matrix(streamer_network)
+
+
+yyy = pd.DataFrame()
+community_favorites = pd.DataFrame()
+
+for i in node_info_streamers.community_id.unique().tolist():
+    cluster_network = streamer_network.copy()
+    cluster_network.remove_nodes_from(node_info_streamers.query(f"community_id != {i}").numerical_id.to_list())
+    betweenness_scores = nx.betweenness_centrality(cluster_network)
+    closeness_scores = nx.closeness_centrality(cluster_network)
+    pagerank_scores = nx.pagerank(cluster_network)
+    df_cluster_scores = pd.DataFrame.from_dict(betweenness_scores, orient='index', columns=['betweenness']).merge(
+        pd.DataFrame.from_dict(closeness_scores, orient='index', columns=['closeness']), left_index=True,right_index=True).merge(
+        pd.DataFrame.from_dict(pagerank_scores, orient='index', columns=['pagerank']), left_index=True,right_index=True)    
+    df_cluster_scores = df_cluster_scores.merge(streamers_info, left_index=True, right_on='numerical_id').drop(columns = ['id', 'type'])
+    yyy = pd.concat([yyy, df_cluster_scores.assign(community_id = i)], axis=0) 
+
+    tmp_network = network_data.copy()
+    tmp_network.remove_nodes_from(node_info2.query(f"community_id != {i}").numerical_id.to_list())
+    community_attributes = pd.DataFrame.from_dict(nx.in_degree_centrality(tmp_network), orient='index', columns=['indegree']).merge(node_info2.query("type != 'streamer'"), left_index=True, right_on='numerical_id').sort_values("indegree", ascending=False).groupby('type').head(3)
+    community_favorites = pd.concat([community_favorites, community_attributes.assign(community_id = i)], axis=0) 
+
+yyy['followers'] = yyy.followers.astype(float)
+
+#### setting personalization dict for each community (top 5 streamres are selected)
+zzz = pd.DataFrame()
+for i in node_info_streamers.community_id.unique().tolist():
+    tmp_df = yyy[yyy['community_id'] == i]    
+    personalization_dict = {key: 0 for key in list(streamer_network.nodes())}
+    personalization_dict.update({key: 0.2 for key in tmp_df.nlargest(5,"views_avg").numerical_id.to_list()}) ##assign equal probs
+    pr2 = nx.pagerank(streamer_network, personalization=personalization_dict, alpha = 0.85, max_iter=1000)
+    pr_scores = pd.DataFrame.from_dict(pr2, orient='index', columns=['PR_score'])    
+    zzz = pd.concat([zzz, pr_scores.assign(loop_community_id = i)], axis=0) 
+
+
+### calculation results
+randomwalk_results = zzz.merge(node_info_streamers, left_index=True, right_on='numerical_id').reset_index(drop=True)
+randomwalk_results['same_community'] = np.where(randomwalk_results['loop_community_id'] == randomwalk_results['community_id'],1,0)
+randomwalk_results_agg = randomwalk_results.groupby(['loop_community_id', 'community_id'])['PR_score'].sum().reset_index()
+randomwalk_results_matrix = randomwalk_results_agg.pivot(index='loop_community_id', values='PR_score', columns='community_id').fillna(0)
+rw_diag = randomwalk_results_matrix.to_numpy().diagonal()
+print('number of clusters: ', len(rw_diag))
+print('number of clusters with retention probability larger than .95: ', (rw_diag > 0.95).sum())
+print('number of clusters with retention probability larger than .80: ', (rw_diag > 0.80).sum())
+print('number of clusters with retention probability smaller than .50: ', (rw_diag < 0.50).sum())    
+
+### merging results, 10-50-100 steps
+markov_communities = transition_df.index.to_list()[1:]
+markov_10 = pd.DataFrame(markov_list[20], index= markov_communities)
+markov_50 = pd.DataFrame(markov_list[50], index= markov_communities)
+markov_100 = pd.DataFrame(markov_list[100], index= markov_communities)
+m10 = markov_10.sum(axis=0).rename('M20_inflow_sum').to_frame().merge(pd.Series(data = markov_10.to_numpy().diagonal(), index = markov_communities, name='M20_retention'), left_index=True,right_index=True)
+m50 = markov_50.sum(axis=0).rename('M50_inflow_sum').to_frame().merge(pd.Series(data = markov_50.to_numpy().diagonal(), index = markov_communities, name='M50_retention'), left_index=True,right_index=True)
+m100 = markov_100.sum(axis=0).rename('M100_inflow_sum').to_frame().merge(pd.Series(data = markov_100.to_numpy().diagonal(), index = markov_communities, name='M100_retention'), left_index=True,right_index=True)
+
+### FINAL, community scores
+communities_step1 = yyy.groupby('community_id').agg({'numerical_id':'size', 'views_avg':'median', 'followers':'mean'}).rename(columns={
+    'numerical_id':'count',
+    'views_avg': 'median_views',
+    'followers': 'followers_avg'
+}).apply(lambda x: round(x,0), axis=0).reset_index()
+
+community_scores_df = communities_step1.merge(
+    randomwalk_results_matrix.sum(axis=0).rename('RW_inflow_sum'), left_on='community_id', right_index=True).merge(
+    pd.Series(index=randomwalk_results_matrix.index.to_list(), data=rw_diag, name='RW_retention'), right_index=True, left_on='community_id'   
+    ).merge(
+        m10, left_on='community_id', right_index=True
+    ).merge(
+        m50, left_on='community_id', right_index=True
+    ).merge(
+        m100, left_on='community_id', right_index=True
+    ).apply(lambda x: round(x,2), axis=0)
+community_scores_df.sort_values("M50_retention", ascending=False)
+
+### exporting to gephi
+selected_communities = community_scores_df.query("M20_retention > 0.65 and count > 50").community_id.to_list()
+export_data = network_data.copy()
+export_data.remove_nodes_from(node_info2[~node_info2.community_id.isin(selected_communities)].numerical_id.to_list())
+update_df = yyy.sort_values("closeness", ascending=False).groupby('community_id').head(1).merge(top2, left_on = 'community_id', right_on = 'community_id')
+update_dict = update_df[['numerical_id', 'fav_labels']].set_index('numerical_id').to_dict(orient='dict').get('fav_labels')
+#nx.set_node_attributes(export_data, {k:'' for k in list(export_data.nodes())}, name='label')
+nx.set_node_attributes(export_data, update_dict, name='fav_labels')
+nx.write_graphml(export_data, path = filepath1 + '/chosenclusters3.graphml')
+
